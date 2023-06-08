@@ -14,18 +14,36 @@ def loop(que_in, que_out):
     cap.set(cv2.CAP_PROP_BUFFERSIZE, 4)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-    cap.set(cv2.CAP_PROP_FPS, 30)
     print('start')
 
+    ## 出力する動画の設定
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = 10
+    fmt = cv2.VideoWriter_fourcc(*'MP4V')
+    out = cv2.VideoWriter('./dst.mp4', fmt, fps, (width, height))
+
+    print(width, height, fps)
+
     que_out.put('stand by')
+    now_time = time.time()
     while True:
         ret, frame = cap.read()
-        cv2.imshow('cap', frame)
-        if cv2.waitKey(1) == ord('q'):
-            break
 
-        if que_in.qsize() > 1:
-            print(que_in.get())
-        que_out.put('GO')
+        out.write(frame)
+        if que_in.qsize() > 0:
+            got_msg = que_in.get()
+            if got_msg == 'QUIT':
+                break
+            elif got_msg == 'A':
+                cv2.imshow('cap', frame)
+                cv2.waitKey(1)
+
+        print(1 / (time.time() - now_time))
+        now_time = time.time()
+
+    print('break')
     cap.release()
-    cv2.destroyAllWindows()
+    out.release()
+    que_out.put('QUIT')
+#    cv2.destroyAllWindows()

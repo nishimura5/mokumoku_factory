@@ -37,11 +37,13 @@ class Game:
         pyxel.run(self.update, self.draw)
 
     def update(self):
+        ## image_showにQUITを送ってカメラを閉じさせる
         if pyxel.btnp(pyxel.KEY_Q):
-            pyxel.quit()
+            self.que_out.put('QUIT')
 
-        if self.que_in.qsize() > 1:
-            print(self.que_in.get())
+        if self.que_in.qsize() > 0:
+            got_msg = self.que_in.get()
+            print(got_msg)
 
         ## 時計の針を進める
         if self.clock > self.CLOCK_PERIOD:
@@ -336,7 +338,6 @@ class Trash:
     def is_near(self, worker):
         x_dist = abs(self.x+8 - worker.x-8)
         y_dist = abs(self.y+8 - worker.y-12)
-        print(x_dist, y_dist)
         if x_dist < 18 and y_dist < 18:
             return True
         else:
