@@ -174,42 +174,38 @@ class Worker:
         if 'right' in directions:
             next_x += speed
             next_right = (next_x+13)//8
-            tile_right1 = pyxel.tilemap(0).pget(next_right, now_y1)
-            tile_right2 = pyxel.tilemap(0).pget(next_right, now_y2)
-            if self._is_floor_tile(tile_right1) and self._is_floor_tile(tile_right2):
+            if self._is_floor_tile(next_right, now_y1, next_right, now_y2):
                 self.x = next_x
         if 'left' in directions:
             next_x -= speed
             next_left = (next_x+2)//8
-            tile_left1 = pyxel.tilemap(0).pget(next_left, now_y1)
-            tile_left2 = pyxel.tilemap(0).pget(next_left, now_y2)
-            if self._is_floor_tile(tile_left1) and self._is_floor_tile(tile_left2):
+            if self._is_floor_tile(next_left, now_y1, next_left, now_y2):
                 self.x = next_x
         if 'up' in directions:
             next_y -= speed
             next_top = (next_y+8)//8
-            tile_top1 = pyxel.tilemap(0).pget(now_x1, next_top)
-            tile_top2 = pyxel.tilemap(0).pget(now_x2, next_top)
-            if self._is_floor_tile(tile_top1) and self._is_floor_tile(tile_top2):
+            if self._is_floor_tile(now_x1, next_top, now_x2, next_top):
                 self.y = next_y
         if 'down' in directions:
             next_y += speed
             next_bottom = (next_y+13)//8
-            tile_bottom1 = pyxel.tilemap(0).pget(now_x1, next_bottom)
-            tile_bottom2 = pyxel.tilemap(0).pget(now_x2, next_bottom)
-            if self._is_floor_tile(tile_bottom1) and self._is_floor_tile(tile_bottom2):
+            if self._is_floor_tile(now_x1, next_bottom, now_x2, next_bottom):
                 self.y = next_y
 
+
     ## 対象タイルが床タイルかを判定
-    def _is_floor_tile(self, tile):
-        if tile[0]<2 and tile[1]<2:
+    def _is_floor_tile(self, x1, y1, x2, y2):
+        tile1 = pyxel.tilemap(0).pget(x1, y1)
+        tile2 = pyxel.tilemap(0).pget(x2, y2)
+        if tile1[0]<2 and tile1[1]<2 and tile2[0]<2 and tile2[1]<2:
             return True
         else:
             return False
     
     def blt(self):
+        ## 今持っている材料
         if self.slot['a'] is not None:
-            pyxel.blt(BLK+4, 4, IMG_BANK_0, self.slot['a'].addr_x, self.slot['a'].addr_y, 8, 8, 0)
+            pyxel.blt(2*BLK+4, 11*BLK+4, IMG_BANK_0, self.slot['a'].addr_x, self.slot['a'].addr_y, 8, 8, 0)
         pyxel.blt(self.x, self.y, IMG_BANK_0, 0, 0, 16, 16, 8)
 
 ## 材料
