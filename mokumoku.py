@@ -17,7 +17,7 @@ class Game:
 
     def __init__(self):
         self.clock = 0
-        self.materials: list[Material] = [Material(code) for code in ['yellow_juel', 'red_juel', 'blue_juel', 'yellow_rod', 'red_rod', 'blue_rod']]
+        self.materials: list[Material] = [Material(code) for code in ['yellow_juel', 'red_juel', 'blue_juel', 'green_juel', 'yellow_rod', 'red_rod', 'blue_rod', 'green_rod']]
         self.worker = Worker(7*BLK, BLK)
         self.storages: list[Storage] = [Storage(i, 5*BLK, 2*BLK + i*2*BLK) for i in range(self.STORAGE_NUM)]
         self.products: list[Product] = [Product(i, 16*BLK, 2*BLK + i*2*BLK, self.materials) for i in range(self.PRODUCT_NUM)]
@@ -192,7 +192,6 @@ class Worker:
             if self._is_floor_tile(now_x1, next_bottom, now_x2, next_bottom):
                 self.y = next_y
 
-
     ## 対象タイルが床タイルかを判定
     def _is_floor_tile(self, x1, y1, x2, y2):
         tile1 = pyxel.tilemap(0).pget(x1, y1)
@@ -221,15 +220,21 @@ class Material:
         elif code == 'blue_juel':
             self.addr_x = 24
             self.addr_y = 16
-        if code == 'yellow_rod':
+        elif code == 'green_juel':
             self.addr_x = 24
             self.addr_y = 24
+        elif code == 'yellow_rod':
+            self.addr_x = 32 
+            self.addr_y = 16
         elif code == 'red_rod':
             self.addr_x = 32
             self.addr_y = 24
         elif code == 'blue_rod':
-            self.addr_x = 32 
+            self.addr_x = 40 
             self.addr_y = 16
+        elif code == 'green_rod':
+            self.addr_x = 40 
+            self.addr_y = 24
 
 ## 倉庫
 class Storage:
@@ -319,7 +324,7 @@ class Product:
     def blt(self):
         ## 穴
         for offset, need in enumerate(self.needs):
-            pyxel.blt(self.x+4+offset*8, self.y+4, IMG_BANK_0, need.addr_x+24, need.addr_y, 8, 8, 0)
+            pyxel.blt(self.x+4+offset*8, self.y+4, IMG_BANK_0, need.addr_x+32, need.addr_y, 8, 8, 0)
 
     def add_cnt(self):
         self.cnt += 1
