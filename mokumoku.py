@@ -76,20 +76,31 @@ class Game:
             storage.add_material(material)
 
             ## ワーカーが材料を入手する処理
-            if pyxel.btn(pyxel.KEY_SPACE) and\
+            if pyxel.btn(pyxel.KEY_J) and\
                     storage.is_near(self.worker) == True and\
-                    self.worker.get_slot('a') is None:
-                self.worker.prop_material('a', storage.pop_material())
+                    self.worker.get_slot('j') is None:
+                self.worker.prop_material('j', storage.pop_material())
+                storage.add_cnt()
+            if pyxel.btn(pyxel.KEY_K) and\
+                    storage.is_near(self.worker) == True and\
+                    self.worker.get_slot('k') is None:
+                self.worker.prop_material('k', storage.pop_material())
                 storage.add_cnt()
 
         ## 製品の処理
         for product in self.products:
             ## ワーカーが材料を設置する処理
-            if pyxel.btn(pyxel.KEY_SPACE) and\
+            if pyxel.btn(pyxel.KEY_J) and\
                     product.is_near(self.worker) == True and\
-                    self.worker.get_slot('a') is not None and\
-                    self.worker.get_slot('a') in product.needs:
-                product.add_material(self.worker.place_material('a'))
+                    self.worker.get_slot('j') is not None and\
+                    self.worker.get_slot('j') in product.needs:
+                product.add_material(self.worker.place_material('j'))
+            elif pyxel.btn(pyxel.KEY_K) and\
+                    product.is_near(self.worker) == True and\
+                    self.worker.get_slot('k') is not None and\
+                    self.worker.get_slot('k') in product.needs:
+                product.add_material(self.worker.place_material('k'))
+
             ## 完成したらリセット
             if len(product.needs) == 0:
                 self.que_out.put('A')
@@ -97,10 +108,15 @@ class Game:
                 product.add_cnt()
 
         ## ゴミ箱の処理
-        if pyxel.btn(pyxel.KEY_SPACE) and\
+        if pyxel.btn(pyxel.KEY_J) and\
                self.trash.is_near(self.worker) == True and\
-               self.worker.get_slot('a') is not None:
-           self.worker.place_material('a')
+               self.worker.get_slot('j') is not None:
+           self.worker.place_material('j')
+           self.trash.add_cnt()
+        elif pyxel.btn(pyxel.KEY_K) and\
+               self.trash.is_near(self.worker) == True and\
+               self.worker.get_slot('k') is not None:
+           self.worker.place_material('k')
            self.trash.add_cnt()
 
     def draw(self):
@@ -126,7 +142,7 @@ class Game:
         trash_score = self.trash.cnt * 10
         score = product_score + storage_score - trash_score
 
-        pyxel.text(8, 4*BLK, f"SCORE: {score}", 7)
+        pyxel.text(8, BLK, f"SCORE: {score:>5}", 7)
 
 class Worker:
     def __init__(self, init_x, init_y):
@@ -136,7 +152,7 @@ class Worker:
         self.y = init_y
 
         ## スロットコードはボタンに対応
-        self.slot: dict[str, Material] = {'a':None, 'b':None, 'x':None, 'y':None}
+        self.slot: dict[str, Material] = {'j':None, 'k':None, 'x':None, 'y':None}
 
     def update_clock(self, clock_val):
         if clock_val % self.clock_max == 0:
@@ -203,8 +219,10 @@ class Worker:
     
     def blt(self):
         ## 今持っている材料
-        if self.slot['a'] is not None:
-            pyxel.blt(2*BLK+4, 11*BLK+4, IMG_BANK_0, self.slot['a'].addr_x, self.slot['a'].addr_y, 8, 8, 0)
+        if self.slot['j'] is not None:
+            pyxel.blt(BLK+4, 11*BLK+4, IMG_BANK_0, self.slot['j'].addr_x, self.slot['j'].addr_y, 8, 8, 0)
+        if self.slot['k'] is not None:
+            pyxel.blt(12+2*BLK, 11*BLK+4, IMG_BANK_0, self.slot['k'].addr_x, self.slot['k'].addr_y, 8, 8, 0)
         pyxel.blt(self.x, self.y, IMG_BANK_0, 0, 0, 16, 16, 8)
 
 ## 材料
