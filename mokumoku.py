@@ -22,6 +22,7 @@ class Game:
         self.storages: list[Storage] = [Storage(i, 5*BLK, 2*BLK + i*2*BLK) for i in range(self.STORAGE_NUM)]
         self.products: list[Product] = [Product(i, 16*BLK, 2*BLK + i*2*BLK, self.materials) for i in range(self.PRODUCT_NUM)]
         self.trash = Trash(7*BLK, 12*BLK)
+        self.fps_disp = ''
 
         pyxel.init(20*BLK, 13*BLK)
         pyxel.load('./mokumoku.pyxres')
@@ -37,13 +38,18 @@ class Game:
         pyxel.run(self.update, self.draw)
 
     def update(self):
-        ## image_showにQUITを送ってカメラを閉じさせる
+        ## image_showにQUITを送ってカメラと動画ファイルを閉じさせる
+        ## 先に動画ファイルを閉じてからゲームを終了させる必要があるため
         if pyxel.btnp(pyxel.KEY_Q):
             self.que_out.put('QUIT')
 
         if self.que_in.qsize() > 0:
             got_msg = self.que_in.get()
-            print(got_msg)
+            ## image_showからQUITが送り返されてきたらゲームを終了
+            if got_msg == 'QUIT':
+                pyxel.quit()
+            else:
+                self.fps_disp = got_msg
 
         ## 時計の針を進める
         if self.clock > self.CLOCK_PERIOD:
@@ -142,6 +148,7 @@ class Game:
         trash_score = self.trash.cnt * 10
         score = product_score + storage_score - trash_score
 
+        pyxel.text(8, 2*BLK, self.fps_disp, 7)
         pyxel.text(8, BLK, f"SCORE: {score:>5}", 7)
 
 class Worker:

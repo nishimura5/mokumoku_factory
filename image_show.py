@@ -40,8 +40,10 @@ def loop(que_in, que_out):
                 cv2.imshow('cap', pict)
                 cv2.waitKey(1)
 
-        print(1 / (time.time() - now_time))
+        fps = 1 / (time.time() - now_time)
+        fps_str = f"fps:{fps:.1f}"
         now_time = time.time()
+        que_out.put(fps_str)
 
     print('break')
     cap.release()
