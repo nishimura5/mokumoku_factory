@@ -36,7 +36,8 @@ def loop(que_in, que_out):
             if got_msg == 'QUIT':
                 break
             elif got_msg == 'A':
-                cv2.imshow('cap', frame)
+                pict = cv2.imread('./img/a.jpg')
+                cv2.imshow('cap', pict)
                 cv2.waitKey(1)
 
         print(1 / (time.time() - now_time))
