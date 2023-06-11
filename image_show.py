@@ -4,7 +4,10 @@ import cv2
 def loop(que_in, que_out):
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
     if cap.isOpened() is False:
-      raise IOError
+        ## 開けなかったらmacだと思うことにする
+        cap = cv2.VideoCapture(0)
+        if cap.isOpened() is False:
+            raise IOError
 
     if isinstance(cap.get(cv2.CAP_PROP_CONVERT_RGB), float):
       cap.set(cv2.CAP_PROP_CONVERT_RGB, 0.0)
@@ -20,7 +23,7 @@ def loop(que_in, que_out):
     width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = 10
-    fmt = cv2.VideoWriter_fourcc(*'MP4V')
+    fmt = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter('./dst.mp4', fmt, fps, (width, height))
 
     print(width, height, fps)
@@ -35,10 +38,6 @@ def loop(que_in, que_out):
             got_msg = que_in.get()
             if got_msg == 'QUIT':
                 break
-            elif got_msg == 'A':
-                pict = cv2.imread('./img/a.jpg')
-                cv2.imshow('cap', pict)
-                cv2.waitKey(1)
 
         fps = 1 / (time.time() - now_time)
         fps_str = f"fps:{fps:.1f}"
