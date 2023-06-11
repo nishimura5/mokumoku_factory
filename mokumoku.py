@@ -2,9 +2,8 @@ from queue import Queue
 import threading
 import random
 import itertools
-import pyxel
 
-from PIL import Image
+import pyxel
 import cv2
 
 import image_show
@@ -76,60 +75,68 @@ class Game:
         self.worker.update_clock(self.clock)
         self.worker.move(4, directions)
 
-        ## 倉庫の処理
+        ## 倉庫に入れる材料の選定
         all_needs = list(itertools.chain.from_iterable([x.needs for x in self.products]))
         if len(all_needs) > self.STORAGE_NUM:
             add_materials = random.sample(all_needs, self.STORAGE_NUM)
         else:
             add_materials = random.sample(self.materials, self.STORAGE_NUM)
+        ## 倉庫の処理
         for storage, material in zip(self.storages, add_materials):
-            storage.update_clock(self.clock)
-            storage.add_material(material)
-
-            ## ワーカーが材料を入手する処理
-            if pyxel.btn(pyxel.KEY_J) and\
-                    storage.is_near(self.worker) == True and\
-                    self.worker.get_slot('j') is None:
-                self.worker.prop_material('j', storage.pop_material())
-                storage.add_cnt()
-            if pyxel.btn(pyxel.KEY_K) and\
-                    storage.is_near(self.worker) == True and\
-                    self.worker.get_slot('k') is None:
-                self.worker.prop_material('k', storage.pop_material())
-                storage.add_cnt()
+            self._storage_worker(storage, self.worker, material)
 
         ## 製品の処理
         for product in self.products:
-            ## ワーカーが材料を設置する処理
-            if pyxel.btn(pyxel.KEY_J) and\
-                    product.is_near(self.worker) == True and\
-                    self.worker.get_slot('j') is not None and\
-                    self.worker.get_slot('j') in product.needs:
-                product.add_material(self.worker.place_material('j'))
-            elif pyxel.btn(pyxel.KEY_K) and\
-                    product.is_near(self.worker) == True and\
-                    self.worker.get_slot('k') is not None and\
-                    self.worker.get_slot('k') in product.needs:
-                product.add_material(self.worker.place_material('k'))
-
-            ## 完成したらリセット
-            if len(product.needs) == 0:
-                product.reset()
-                product.add_cnt()
+            complete = self._product_worker(product, self.worker)
+            if complete:
                 img = cv2.imread('./img/b.jpg')
                 cv2.imshow('cap', img)
 
-        ## ゴミ箱の処理
-        if pyxel.btn(pyxel.KEY_J) and\
-               self.trash.is_near(self.worker) == True and\
-               self.worker.get_slot('j') is not None:
-           self.worker.place_material('j')
-           self.trash.add_cnt()
-        elif pyxel.btn(pyxel.KEY_K) and\
-               self.trash.is_near(self.worker) == True and\
-               self.worker.get_slot('k') is not None:
-           self.worker.place_material('k')
-           self.trash.add_cnt()
+        self._trash_worker(self.trash, self.worker)
+
+    ## 倉庫の処理
+    ## material: 倉庫に入れる材料
+    def _storage_worker(self, storage, worker, material):
+        btn_dict = {'j':pyxel.KEY_J, 'k':pyxel.KEY_K}
+        storage.update_clock()
+        storage.add_material(material)
+
+        ## ワーカーが材料を入手する処理
+        for k,btn in btn_dict.items():
+            if pyxel.btn(btn) and\
+                    storage.is_near(worker) == True and\
+                    worker.get_slot(k) is None:
+                worker.prop_material(k, storage.pop_material())
+                storage.add_cnt()
+
+    ## 製品の処理
+    def _product_worker(self, product, worker):
+        complete = False
+        btn_dict = {'j':pyxel.KEY_J, 'k':pyxel.KEY_K}
+        ## ワーカーが材料を設置する処理
+        for k,btn in btn_dict.items():
+            if pyxel.btn(btn) and\
+                    product.is_near(worker) == True and\
+                    worker.get_slot(k) is not None and\
+                    worker.get_slot(k) in product.needs:
+                product.add_material(worker.place_material(k))
+
+        ## 完成したらリセット
+        if len(product.needs) == 0:
+            product.reset()
+            product.add_cnt()
+            complete = True
+        return complete
+
+    ## ゴミ箱の処理
+    def _trash_worker(self, trash, worker):
+        btn_dict = {'j':pyxel.KEY_J, 'k':pyxel.KEY_K}
+        for k,btn in btn_dict.items():
+            if pyxel.btn(btn) and\
+                   trash.is_near(worker) == True and\
+                   worker.get_slot(k) is not None:
+               worker.place_material(k)
+               trash.add_cnt()
 
     def draw(self):
         pyxel.cls(0)

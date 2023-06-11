@@ -13,7 +13,7 @@ class Worker:
         self.y = init_y
 
         ## スロットコードはボタンに対応
-        self.slot: dict[str, Material] = {'j':None, 'k':None, 'x':None, 'y':None}
+        self.slot: dict[str, Material] = {'j':None, 'k':None}
 
     def update_clock(self, clock_val):
         if clock_val % self.clock_max == 0:
@@ -129,7 +129,7 @@ class Storage:
         self.capacity = 1
         self.materials: list[Material] = []
 
-    def update_clock(self, clock_val):
+    def update_clock(self):
         self.charge_cnt += 1
         if self.charge_cnt > self.charge_max:
             self.is_active = True
