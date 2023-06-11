@@ -1,5 +1,9 @@
+from queue import Queue
+import threading
 import time
 import cv2
+
+import mokumoku
 
 def loop(que_in, que_out):
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
@@ -49,3 +53,12 @@ def loop(que_in, que_out):
     out.release()
     que_out.put('QUIT')
 #    cv2.destroyAllWindows()
+
+if __name__ == "__main__":
+    que_game_to_cv2 = Queue()
+    que_cv2_to_game = Queue()
+    loop_thread = threading.Thread(target=loop, args=(que_game_to_cv2, que_cv2_to_game))
+    loop_thread.start()
+
+    game = mokumoku.Game()
+    game.run(que_cv2_to_game, que_game_to_cv2)

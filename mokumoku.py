@@ -1,18 +1,11 @@
-from queue import Queue
-import threading
 import random
 import itertools
 
 import pyxel
-import cv2
 
-import image_show
 import game_object
 
 BLK = 16
-
-img = cv2.imread('./img/a.jpg')
-cv2.imshow('cap', img)
 
 class Game:
     STORAGE_NUM = 5
@@ -32,29 +25,34 @@ class Game:
         pyxel.init(20*BLK, 13*BLK)
         pyxel.load('./mokumoku.pyxres')
 
-    def run(self, que_in, que_out):
+    def run(self, que_in=None, que_out=None):
         self.que_in = que_in
         self.que_out = que_out
 
-        ## 別スレッドからqueueが入ってくるまでブロック
-        print(self.que_in.get())
+        if self.que_in is not None:
+            ## 別スレッドからqueueが入ってくるまでブロック
+            print(self.que_in.get())
 
         ## フレーム更新時にupdate、描画時にdrawを実行する
         pyxel.run(self.update, self.draw)
 
     def update(self):
-        ## image_showにQUITを送ってカメラと動画ファイルを閉じさせる
-        ## 先に動画ファイルを閉じてからゲームを終了させる必要があるため
         if pyxel.btnp(pyxel.KEY_Q):
-            self.que_out.put('QUIT')
-
-        if self.que_in.qsize() > 0:
-            got_msg = self.que_in.get()
-            ## image_showからQUITが送り返されてきたらゲームを終了
-            if got_msg == 'QUIT':
-                pyxel.quit()
+            if self.que_out is not None:
+                ## image_showにQUITを送ってカメラと動画ファイルを閉じさせる
+                ## 先に動画ファイルを閉じてからゲームを終了させる必要があるため
+                self.que_out.put('QUIT')
             else:
-                self.fps_disp = got_msg
+                pyxel.quit()
+
+        if self.que_in is not None:
+            if self.que_in.qsize() > 0:
+                got_msg = self.que_in.get()
+                ## image_showからQUITが送り返されてきたらゲームを終了
+                if got_msg == 'QUIT':
+                    pyxel.quit()
+                else:
+                    self.fps_disp = got_msg
 
         ## シーン0
         if pyxel.btnp(pyxel.KEY_SPACE) and self.scene==0:
@@ -98,9 +96,6 @@ class Game:
         ## 製品の処理
         for product in self.products:
             complete = self._product_worker(product, self.worker)
-            if complete:
-                img = cv2.imread('./img/b.jpg')
-                cv2.imshow('cap', img)
 
         self._trash_worker(self.trash, self.worker)
 
@@ -177,10 +172,5 @@ class Game:
             pyxel.text(8, BLK, f"SCORE: {score:>5}", 7)
 
 if __name__ == "__main__":
-    que_game_to_cv2 = Queue()
-    que_cv2_to_game = Queue()
-    loop_thread = threading.Thread(target=image_show.loop, args=(que_game_to_cv2, que_cv2_to_game))
-    loop_thread.start()
-
     game = Game()
-    game.run(que_cv2_to_game, que_game_to_cv2)
+    game.run()
