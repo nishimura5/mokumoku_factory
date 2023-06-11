@@ -21,6 +21,7 @@ class Game:
 
     def __init__(self):
         self.clock = 0
+        self.scene = 0
         self.materials: list[game_object.Material] = [game_object.Material(code) for code in ['yellow_juel', 'red_juel', 'blue_juel', 'green_juel', 'yellow_rod', 'red_rod', 'blue_rod', 'green_rod']]
         self.worker = game_object.Worker(7*BLK, BLK)
         self.storages: list[game_object.Storage] = [game_object.Storage(i, 5*BLK, 2*BLK + i*2*BLK) for i in range(self.STORAGE_NUM)]
@@ -55,6 +56,15 @@ class Game:
             else:
                 self.fps_disp = got_msg
 
+        ## シーン0
+        if pyxel.btnp(pyxel.KEY_SPACE) and self.scene==0:
+            self.scene = 1
+
+        ## シーン1
+        if self.scene == 1:
+            self._scene_1()
+
+    def _scene_1(self):
         ## 時計の針を進める
         if self.clock > self.CLOCK_PERIOD:
             self.clock = 0
@@ -93,6 +103,7 @@ class Game:
                 cv2.imshow('cap', img)
 
         self._trash_worker(self.trash, self.worker)
+
 
     ## 倉庫の処理
     ## material: 倉庫に入れる材料
@@ -141,28 +152,29 @@ class Game:
     def draw(self):
         pyxel.cls(0)
 
-        ## タイルマップを描画
-        pyxel.bltm(0, 0, 0, 0, 0, 20*BLK, 13*BLK)
+        if self.scene == 1:
+            ## タイルマップを描画
+            pyxel.bltm(0, 0, 0, 0, 0, 20*BLK, 13*BLK)
 
-        ## 倉庫を描画
-        for storage in self.storages:
-            storage.blt()
+            ## 倉庫を描画
+            for storage in self.storages:
+                storage.blt()
 
-        ## 製品を描画
-        for product in self.products:
-            product.blt()
+            ## 製品を描画
+            for product in self.products:
+                product.blt()
 
-        ## ワーカーを描画
-        self.worker.blt()
+            ## ワーカーを描画
+            self.worker.blt()
 
-        ## テキストを描画
-        storage_score = sum([i.cnt for i in self.storages]) * 10
-        product_score = sum([i.cnt for i in self.products]) * 100
-        trash_score = self.trash.cnt * 10
-        score = product_score + storage_score - trash_score
+            ## テキストを描画
+            storage_score = sum([i.cnt for i in self.storages]) * 10
+            product_score = sum([i.cnt for i in self.products]) * 100
+            trash_score = self.trash.cnt * 10
+            score = product_score + storage_score - trash_score
 
-        pyxel.text(8, 2*BLK, self.fps_disp, 7)
-        pyxel.text(8, BLK, f"SCORE: {score:>5}", 7)
+            pyxel.text(8, 2*BLK, self.fps_disp, 7)
+            pyxel.text(8, BLK, f"SCORE: {score:>5}", 7)
 
 if __name__ == "__main__":
     que_game_to_cv2 = Queue()

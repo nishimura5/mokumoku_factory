@@ -11,6 +11,7 @@ class Worker:
         self.clock_max = 2
         self.x = init_x
         self.y = init_y
+        self.direction = 'down'
 
         ## スロットコードはボタンに対応
         self.slot: dict[str, Material] = {'j':None, 'k':None}
@@ -53,21 +54,25 @@ class Worker:
             next_right = (next_x+13)//8
             if self._is_floor_tile(next_right, now_y1, next_right, now_y2):
                 self.x = next_x
+            self.direction = 'right'
         if 'left' in directions:
             next_x -= speed
             next_left = (next_x+2)//8
             if self._is_floor_tile(next_left, now_y1, next_left, now_y2):
                 self.x = next_x
+            self.direction = 'left'
         if 'up' in directions:
             next_y -= speed
             next_top = (next_y+8)//8
             if self._is_floor_tile(now_x1, next_top, now_x2, next_top):
                 self.y = next_y
+            self.direction = 'up'
         if 'down' in directions:
             next_y += speed
             next_bottom = (next_y+13)//8
             if self._is_floor_tile(now_x1, next_bottom, now_x2, next_bottom):
                 self.y = next_y
+            self.direction = 'down'
 
     ## 対象タイルが床タイルかを判定
     def _is_floor_tile(self, x1, y1, x2, y2):
@@ -84,7 +89,15 @@ class Worker:
             pyxel.blt(BLK+4, 11*BLK+4, IMG_BANK_0, self.slot['j'].addr_x, self.slot['j'].addr_y, 8, 8, 0)
         if self.slot['k'] is not None:
             pyxel.blt(12+2*BLK, 11*BLK+4, IMG_BANK_0, self.slot['k'].addr_x, self.slot['k'].addr_y, 8, 8, 0)
-        pyxel.blt(self.x, self.y, IMG_BANK_0, 0, 0, 16, 16, 8)
+
+        if self.direction == 'right':
+            pyxel.blt(self.x, self.y, IMG_BANK_0, 16, 0, 16, 16, 8)
+        elif self.direction == 'left':
+            pyxel.blt(self.x, self.y, IMG_BANK_0, 32, 0, 16, 16, 8)
+        elif self.direction == 'up':
+            pyxel.blt(self.x, self.y, IMG_BANK_0, 48, 0, 16, 16, 8)
+        else:
+            pyxel.blt(self.x, self.y, IMG_BANK_0, 0, 0, 16, 16, 8)
 
 ## 材料
 class Material:
