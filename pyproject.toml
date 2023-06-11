@@ -1,0 +1,21 @@
+[project]
+name = "mokumoku-factory"
+version = "0.1.0"
+description = "Add a short description here"
+dependencies = [
+    "pyxel~=1.9.16",
+    "opencv-python~=4.7.0.72",
+    "Pillow~=9.5.0",
+]
+readme = "README.md"
+requires-python = ">= 3.11"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.rye]
+managed = true
+
+[tool.hatch.metadata]
+allow-direct-references = true
