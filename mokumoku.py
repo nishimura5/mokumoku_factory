@@ -28,7 +28,7 @@ class Game:
         ## 製品を完成させた回数
         self.complete_cnt = 0
 
-        pyxel.init(20*BLK, 13*BLK)
+        pyxel.init(20*BLK, 13*BLK, title="mokumoku_factory")
         pyxel.load('./mokumoku.pyxres')
 
     def run(self, que_in=None, que_out=None):
