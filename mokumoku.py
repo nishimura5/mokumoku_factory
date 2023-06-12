@@ -11,6 +11,7 @@ class Game:
     STORAGE_NUM = 5
     PRODUCT_NUM = 5
     CLOCK_PERIOD = 240
+    BTN_DICT = {'j':pyxel.KEY_J, 'k':pyxel.KEY_K}
 
     def __init__(self):
         self.clock = 0
@@ -21,6 +22,11 @@ class Game:
         self.products: list[game_object.Product] = [game_object.Product(i, 16*BLK, 2*BLK + i*2*BLK, self.materials) for i in range(self.PRODUCT_NUM)]
         self.trash = game_object.Trash(7*BLK, 12*BLK)
         self.fps_disp = ''
+
+        ## ワーカーが材料の取得に失敗した回数
+        self.err_cnt = {k:0 for k in self.BTN_DICT.keys()}
+        ## 製品を完成させた回数
+        self.complete_cnt = 0
 
         pyxel.init(20*BLK, 13*BLK)
         pyxel.load('./mokumoku.pyxres')
@@ -83,6 +89,9 @@ class Game:
         self.worker.update_clock(self.clock)
         self.worker.move(4, directions)
 
+        ## ボタン押し間違いカウンター用配列
+        stat = {k:{'storage':[], 'product':[], 'trash':0, 'push':pyxel.btnp(v), 'err':False} for k,v in self.BTN_DICT.items()}
+
         ## 倉庫に入れる材料の選定
         all_needs = list(itertools.chain.from_iterable([x.needs for x in self.products]))
         if len(all_needs) > self.STORAGE_NUM:
@@ -91,58 +100,112 @@ class Game:
             add_materials = random.sample(self.materials, self.STORAGE_NUM)
         ## 倉庫の処理
         for storage, material in zip(self.storages, add_materials):
-            self._storage_worker(storage, self.worker, material)
+            result = self._storage_worker(storage, self.worker, material)
+            for k in self.BTN_DICT.keys():
+                stat[k]['storage'].append(result[k])
 
         ## 製品の処理
         for product in self.products:
-            complete = self._product_worker(product, self.worker)
+            complete, result = self._product_worker(product, self.worker)
+            self.complete_cnt += complete
+            for k in self.BTN_DICT.keys():
+                stat[k]['product'].append(result[k])
 
-        self._trash_worker(self.trash, self.worker)
+        result = self._trash_worker(self.trash, self.worker)
+        for k in self.BTN_DICT.keys():
+            stat[k]['trash'] = result[k]
 
+        ## ボタン押し間違い計算
+        for k in self.BTN_DICT.keys():
+            ## ボタンを押していないときは評価しない
+            if stat[k]['push']==False:
+                continue
+            ## 倉庫にも製品にも接触してなかったらerr=True
+            storage_err = sum([x==-1 for x in stat[k]['storage']]) == self.STORAGE_NUM
+            product_err = sum([x==-1 for x in stat[k]['product']]) == self.PRODUCT_NUM
+            trash_err = stat[k]['trash'] == -1
+            stat[k]['err'] = storage_err and product_err and trash_err
+
+            if stat[k]['err']==True:
+                self.err_cnt[k] += 1
+
+
+        print(self.err_cnt['j'], self.err_cnt['k'], complete)
 
     ## 倉庫の処理
     ## material: 倉庫に入れる材料
+    ## ret: ワーカーが何か手に入れたら1,空振りなら-1,ボタンを押してなければ0
     def _storage_worker(self, storage, worker, material):
-        btn_dict = {'j':pyxel.KEY_J, 'k':pyxel.KEY_K}
+        """
+        ワーカーは倉庫から材料を受け取る。
+        プレイヤーがボタンを押したとき、近くに当該倉庫がなければretval=-1、倉庫があっても材料を受け取れなければretval=-1、
+        倉庫があり、かつ材料を受け取れればretval=1を返す。
+        ボタンを押さなければretval=0を返す。
+        """
         storage.update_clock()
         storage.add_material(material)
 
+        retval = {k:0 for k in self.BTN_DICT.keys()}
         ## ワーカーが材料を入手する処理
-        for k,btn in btn_dict.items():
-            if pyxel.btn(btn) and\
-                    storage.is_near(worker) == True and\
-                    worker.get_slot(k) is None:
-                worker.prop_material(k, storage.pop_material())
-                storage.add_cnt()
+        for k,btn in self.BTN_DICT.items():
+            if pyxel.btn(btn):
+                if storage.is_near(worker) == True and worker.get_slot(k) is None:
+                    worker.prop_material(k, storage.pop_material())
+                    storage.add_cnt()
+                    retval[k] = 1
+                    break
+                else:
+                    retval[k] = -1
+        return retval
 
-    ## 製品の処理
     def _product_worker(self, product, worker):
-        complete = False
-        btn_dict = {'j':pyxel.KEY_J, 'k':pyxel.KEY_K}
+        """
+        製品はワーカーから材料を受け取り、製品を進捗する。
+        製品が完成したらcomplete=1、完成しなければcomplete=0を返す。
+        プレイヤーがボタンを押したとき、近くに当該製品がなければretval=-1、倉庫があっても材料を受け取れなければretval=-1、
+        倉庫があり、かつ材料を受け取れればretval=1を返す。
+        ボタンを押さなければretval=0を返す。
+        """
+        retval = {k:0 for k in self.BTN_DICT.keys()}
+        complete = 0
         ## ワーカーが材料を設置する処理
-        for k,btn in btn_dict.items():
-            if pyxel.btn(btn) and\
-                    product.is_near(worker) == True and\
-                    worker.get_slot(k) is not None and\
-                    worker.get_slot(k) in product.needs:
-                product.add_material(worker.place_material(k))
+        for k,btn in self.BTN_DICT.items():
+            if pyxel.btn(btn):
+                if product.is_near(worker) == True and\
+                        worker.get_slot(k) is not None and\
+                        worker.get_slot(k) in product.needs:
+                    product.add_material(worker.place_material(k))
+                    retval[k] = 1
+                    break
+                else:
+                    retval[k] = -1
 
         ## 完成したらリセット
         if len(product.needs) == 0:
             product.reset()
             product.add_cnt()
-            complete = True
-        return complete
+            complete = 1
+        return complete, retval
 
     ## ゴミ箱の処理
     def _trash_worker(self, trash, worker):
-        btn_dict = {'j':pyxel.KEY_J, 'k':pyxel.KEY_K}
-        for k,btn in btn_dict.items():
-            if pyxel.btn(btn) and\
-                   trash.is_near(worker) == True and\
-                   worker.get_slot(k) is not None:
-               worker.place_material(k)
-               trash.add_cnt()
+        """
+        ゴミ箱はワーカーから材料を受け取る。
+        プレイヤーがボタンを押したとき、近くに当該ゴミ箱がなければretval=-1、ゴミ箱があっても材料を受け取れなければretval=-1、
+        ゴミ箱があり、かつ材料を受け取れればretval=1を返す。
+        ボタンを押さなければretval=0を返す。
+        """
+        retval = {k:0 for k in self.BTN_DICT.keys()}
+        for k,btn in self.BTN_DICT.items():
+            if pyxel.btn(btn) and trash.is_near(worker) == True and worker.get_slot(k) is not None:
+                worker.place_material(k)
+                trash.add_cnt()
+                retval[k] = 1
+                break
+            else:
+                retval[k] = -1
+        return retval
+
 
     def draw(self):
         pyxel.cls(0)
