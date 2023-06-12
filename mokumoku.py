@@ -210,7 +210,10 @@ class Game:
     def draw(self):
         pyxel.cls(0)
 
-        if self.scene == 1:
+        if self.scene == 0:
+            pyxel.text(127, 160, "...And Press SPACE Key", 7)
+
+        elif self.scene == 1:
             ## タイルマップを描画
             pyxel.bltm(0, 0, 0, 0, 0, 20*BLK, 13*BLK)
 
@@ -233,6 +236,8 @@ class Game:
 
             pyxel.text(8, 2*BLK, self.fps_disp, 7)
             pyxel.text(8, BLK, f"SCORE: {score:>5}", 7)
+        pyxel.text(147, 100, "Set camera", 7)
+        pyxel.text(157, 110, "around here!", 7)
 
 class Worker:
     def __init__(self, init_x, init_y):
