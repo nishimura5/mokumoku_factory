@@ -130,7 +130,7 @@ class Game:
                 self.err_cnt[k] += 1
 
 
-        print(self.err_cnt['j'], self.err_cnt['k'], complete)
+        print(self.err_cnt['j'], self.err_cnt['k'], self.complete_cnt)
 
     ## 倉庫の処理
     ## material: 倉庫に入れる材料
