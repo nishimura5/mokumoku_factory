@@ -1,5 +1,7 @@
+import datetime
 import random
 import itertools
+from collections import deque
 
 import pyxel
 
@@ -23,10 +25,17 @@ class Game:
         self.trash = Trash(7*BLK, 12*BLK)
         self.fps_disp = ''
 
-        ## ワーカーが材料の取得に失敗した回数
-        self.err_cnt = {k:0 for k in self.BTN_DICT.keys()}
-        ## 製品を完成させた回数
-        self.complete_cnt = 0
+        ## ボタンを押し間違えた回数のカウンタ
+        self.err_cnt : dict[str, int] = {k:0 for k in self.BTN_DICT.keys()}
+        ## 製品を完成させた回数のカウンタ
+        self.complete_cnt: int = 0
+        ## log用の差分チェックのためのバッファ
+        self.cnt_buf = deque([[self.err_cnt, self.complete_cnt]])
+        ## ゲーム開始時の時刻(scene0を抜ける時に記録)
+        self.start_time = datetime.datetime.now()
+        ## log
+        filename = self.start_time.strftime('%Y%m%d_%H%M%S')
+        self.f = open(f'./{filename}.csv', 'w')
 
         pyxel.init(20*BLK, 13*BLK, title="mokumoku_factory")
         pyxel.load('./mokumoku.pyxres')
@@ -49,6 +58,7 @@ class Game:
                 ## 先に動画ファイルを閉じてからゲームを終了させる必要があるため
                 self.que_out.put('QUIT')
             else:
+                self.f.close()
                 pyxel.quit()
 
         if self.que_in is not None:
@@ -56,17 +66,24 @@ class Game:
                 got_msg = self.que_in.get()
                 ## image_showからQUITが送り返されてきたらゲームを終了
                 if got_msg == 'QUIT':
+                    self.f.close()
                     pyxel.quit()
                 else:
                     self.fps_disp = got_msg
 
         ## シーン0
         if pyxel.btnp(pyxel.KEY_SPACE) and self.scene==0:
+            self.start_time = datetime.datetime.now()
             self.scene = 1
 
         ## シーン1
         if self.scene == 1:
             self._scene_1()
+            self.cnt_buf.append([self.err_cnt.copy(), self.complete_cnt])
+            if self.cnt_buf[0] != self.cnt_buf[1]:
+                log_msg = f"{datetime.datetime.now()-self.start_time},{self.err_cnt['j']},{self.err_cnt['k']},{self.complete_cnt}\n"
+                self.f.write(log_msg)
+            self.cnt_buf.popleft()
 
     def _scene_1(self):
         ## 時計の針を進める
@@ -129,8 +146,6 @@ class Game:
             if stat[k]['err']==True:
                 self.err_cnt[k] += 1
 
-
-        print(self.err_cnt['j'], self.err_cnt['k'], self.complete_cnt)
 
     ## 倉庫の処理
     ## material: 倉庫に入れる材料
