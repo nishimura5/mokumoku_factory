@@ -20,9 +20,9 @@ class Game:
         self.scene = 0
         self.materials: list[Material] = [Material(code) for code in ['yellow_juel', 'red_juel', 'blue_juel', 'green_juel', 'yellow_rod', 'red_rod', 'blue_rod', 'green_rod']]
         self.worker = Worker(7*BLK, BLK)
-        self.storages: list[Storage] = [Storage(i, 5*BLK, 2*BLK + i*2*BLK) for i in range(self.STORAGE_NUM)]
-        self.products: list[Product] = [Product(i, 16*BLK, 2*BLK + i*2*BLK, self.materials) for i in range(self.PRODUCT_NUM)]
-        self.trash = Trash(7*BLK, 12*BLK)
+        self.storages: list[Storage] = [Storage(i, 1*BLK, 2*BLK + i*2*BLK) for i in range(self.STORAGE_NUM)]
+        self.products: list[Product] = [Product(i, 15*BLK, 2*BLK + i*2*BLK, self.materials) for i in range(self.PRODUCT_NUM)]
+        self.trash = Trash(3*BLK, 12*BLK)
         self.fps_disp = ''
 
         ## ボタンを押し間違えた回数のカウンタ
@@ -37,7 +37,7 @@ class Game:
         filename = self.start_time.strftime('%Y%m%d_%H%M%S')
         self.f = open(f'./{filename}.csv', 'w')
 
-        pyxel.init(20*BLK, 13*BLK, title="mokumoku_factory")
+        pyxel.init(23*BLK, 13*BLK, title="mokumoku_factory")
         pyxel.load('./mokumoku.pyxres')
 
     def run(self, que_in=None, que_out=None):
@@ -230,7 +230,7 @@ class Game:
 
         elif self.scene == 1:
             ## タイルマップを描画
-            pyxel.bltm(0, 0, 0, 0, 0, 20*BLK, 13*BLK)
+            pyxel.bltm(0, 0, 0, 0, 0, 24*BLK, 13*BLK)
 
             ## 倉庫を描画
             for storage in self.storages:
@@ -250,9 +250,8 @@ class Game:
             score = product_score + storage_score - trash_score
 
             pyxel.text(8, 2*BLK, self.fps_disp, 7)
-            pyxel.text(8, BLK, f"SCORE: {score:>5}", 7)
-        pyxel.text(147, 100, "Set camera", 7)
-        pyxel.text(157, 110, "around here!", 7)
+            pyxel.text(19*BLK+8, BLK, f"SCORE: {score:>5}", 7)
+        pyxel.text(90, 95, "Set camera here!", 7)
 
 class Worker:
     def __init__(self, init_x, init_y):
@@ -335,9 +334,9 @@ class Worker:
     def blt(self):
         ## 今持っている材料
         if self.slot['j'] is not None:
-            pyxel.blt(BLK+4, 11*BLK+4, IMG_BANK_0, self.slot['j'].addr_x, self.slot['j'].addr_y, 8, 8, 0)
+            pyxel.blt(21*BLK-4, 11*BLK+4, IMG_BANK_0, self.slot['j'].addr_x, self.slot['j'].addr_y, 8, 8, 0)
         if self.slot['k'] is not None:
-            pyxel.blt(12+2*BLK, 11*BLK+4, IMG_BANK_0, self.slot['k'].addr_x, self.slot['k'].addr_y, 8, 8, 0)
+            pyxel.blt(12+21*BLK, 10*BLK+4, IMG_BANK_0, self.slot['k'].addr_x, self.slot['k'].addr_y, 8, 8, 0)
 
         if self.direction == 'right':
             pyxel.blt(self.x, self.y, IMG_BANK_0, 16, 0, 16, 16, 8)
