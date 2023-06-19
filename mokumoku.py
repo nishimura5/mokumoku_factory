@@ -13,9 +13,9 @@ class Game:
     STORAGE_NUM = 5
     PRODUCT_NUM = 5
     CLOCK_PERIOD = 240
-    BTN_DICT = {'j':pyxel.KEY_J, 'k':pyxel.KEY_K}
 
     def __init__(self):
+        self.btn_dict = {'a':pyxel.KEY_J, 'b':pyxel.KEY_K}
         self.clock = 0
         self.scene = 0
         self.materials: list[Material] = [Material(code) for code in ['yellow_juel', 'red_juel', 'blue_juel', 'green_juel', 'yellow_rod', 'red_rod', 'blue_rod', 'green_rod']]
@@ -26,7 +26,7 @@ class Game:
         self.fps_disp = ''
 
         ## ボタンを押し間違えた回数のカウンタ
-        self.err_cnt : dict[str, int] = {k:0 for k in self.BTN_DICT.keys()}
+        self.err_cnt : dict[str, int] = {k:0 for k in self.btn_dict.keys()}
         ## 製品を完成させた回数のカウンタ
         self.complete_cnt: int = 0
         ## log用の差分チェックのためのバッファ
@@ -72,16 +72,24 @@ class Game:
                     self.fps_disp = got_msg
 
         ## シーン0
-        if pyxel.btnp(pyxel.KEY_SPACE) and self.scene==0:
-            self.start_time = datetime.datetime.now()
-            self.scene = 1
+        if self.scene==0:
+            if pyxel.btnp(pyxel.KEY_SPACE):
+                self.start_time = datetime.datetime.now()
+                self.scene = 1
+                self.btn_dict = {'a':pyxel.KEY_J, 'b':pyxel.KEY_K}
+                self.use_pad = False
+            elif pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A):
+                self.start_time = datetime.datetime.now()
+                self.scene = 1
+                self.use_pad = True
+                self.btn_dict = {'a':pyxel.GAMEPAD1_BUTTON_A, 'b':pyxel.GAMEPAD1_BUTTON_B}
 
         ## シーン1
         if self.scene == 1:
             self._scene_1()
             self.cnt_buf.append([self.err_cnt.copy(), self.complete_cnt])
             if self.cnt_buf[0] != self.cnt_buf[1]:
-                log_msg = f"{datetime.datetime.now()-self.start_time},{self.err_cnt['j']},{self.err_cnt['k']},{self.complete_cnt}\n"
+                log_msg = f"{datetime.datetime.now()-self.start_time},{self.err_cnt['a']},{self.err_cnt['b']},{self.complete_cnt}\n"
                 self.f.write(log_msg)
             self.cnt_buf.popleft()
 
@@ -94,20 +102,20 @@ class Game:
 
         ## 移動キーの判定
         directions = []
-        if pyxel.btn(pyxel.KEY_D):
+        if pyxel.btn(pyxel.KEY_D) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_RIGHT):
             directions.append('right')
-        if pyxel.btn(pyxel.KEY_A):
+        if pyxel.btn(pyxel.KEY_A) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_LEFT):
             directions.append('left')
-        if pyxel.btn(pyxel.KEY_W):
+        if pyxel.btn(pyxel.KEY_W) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_UP):
             directions.append('up')
-        if pyxel.btn(pyxel.KEY_S):
+        if pyxel.btn(pyxel.KEY_S) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_DOWN):
             directions.append('down')
 
         self.worker.update_clock(self.clock)
         self.worker.move(4, directions)
 
         ## ボタン押し間違いカウンター用配列
-        stat = {k:{'storage':[], 'product':[], 'trash':0, 'push':pyxel.btnp(v), 'err':False} for k,v in self.BTN_DICT.items()}
+        stat = {k:{'storage':[], 'product':[], 'trash':0, 'push':pyxel.btnp(v), 'err':False} for k,v in self.btn_dict.items()}
 
         ## 倉庫に入れる材料の選定
         all_needs = list(itertools.chain.from_iterable([x.needs for x in self.products]))
@@ -118,22 +126,22 @@ class Game:
         ## 倉庫の処理
         for storage, material in zip(self.storages, add_materials):
             result = self._storage_worker(storage, self.worker, material)
-            for k in self.BTN_DICT.keys():
+            for k in self.btn_dict.keys():
                 stat[k]['storage'].append(result[k])
 
         ## 製品の処理
         for product in self.products:
             complete, result = self._product_worker(product, self.worker)
             self.complete_cnt += complete
-            for k in self.BTN_DICT.keys():
+            for k in self.btn_dict.keys():
                 stat[k]['product'].append(result[k])
 
         result = self._trash_worker(self.trash, self.worker)
-        for k in self.BTN_DICT.keys():
+        for k in self.btn_dict.keys():
             stat[k]['trash'] = result[k]
 
-        ## ボタン押し間違い計算
-        for k in self.BTN_DICT.keys():
+       ## ボタン押し間違い計算
+        for k in self.btn_dict.keys():
             ## ボタンを押していないときは評価しない
             if stat[k]['push']==False:
                 continue
@@ -160,9 +168,9 @@ class Game:
         storage.update_clock()
         storage.add_material(material)
 
-        retval = {k:0 for k in self.BTN_DICT.keys()}
+        retval = {k:0 for k in self.btn_dict.keys()}
         ## ワーカーが材料を入手する処理
-        for k,btn in self.BTN_DICT.items():
+        for k,btn in self.btn_dict.items():
             if pyxel.btn(btn):
                 if storage.is_near(worker) == True and worker.get_slot(k) is None:
                     worker.prop_material(k, storage.pop_material())
@@ -181,10 +189,10 @@ class Game:
         倉庫があり、かつ材料を受け取れればretval=1を返す。
         ボタンを押さなければretval=0を返す。
         """
-        retval = {k:0 for k in self.BTN_DICT.keys()}
+        retval = {k:0 for k in self.btn_dict.keys()}
         complete = 0
         ## ワーカーが材料を設置する処理
-        for k,btn in self.BTN_DICT.items():
+        for k,btn in self.btn_dict.items():
             if pyxel.btn(btn):
                 if product.is_near(worker) == True and\
                         worker.get_slot(k) is not None and\
@@ -210,8 +218,8 @@ class Game:
         ゴミ箱があり、かつ材料を受け取れればretval=1を返す。
         ボタンを押さなければretval=0を返す。
         """
-        retval = {k:0 for k in self.BTN_DICT.keys()}
-        for k,btn in self.BTN_DICT.items():
+        retval = {k:0 for k in self.btn_dict.keys()}
+        for k,btn in self.btn_dict.items():
             if pyxel.btn(btn) and trash.is_near(worker) == True and worker.get_slot(k) is not None:
                 worker.place_material(k)
                 trash.add_cnt()
@@ -243,7 +251,15 @@ class Game:
             ## ワーカーを描画
             self.worker.blt()
 
-            ## テキストを描画
+            ## ボタン表記を描画
+            if self.use_pad == True:
+                pyxel.text(20*BLK+4, 11*BLK, "A", 7)
+                pyxel.text(21*BLK+4, 10*BLK, "B", 7)
+            else:
+                pyxel.text(20*BLK+4, 11*BLK, "J", 7)
+                pyxel.text(21*BLK+4, 10*BLK, "K", 7)
+
+            ## スコアを描画
             storage_score = sum([i.cnt for i in self.storages]) * 10
             product_score = sum([i.cnt for i in self.products]) * 100
             trash_score = self.trash.cnt * 10
@@ -262,7 +278,7 @@ class Worker:
         self.direction = 'down'
 
         ## スロットコードはボタンに対応
-        self.slot: dict[str, Material] = {'j':None, 'k':None}
+        self.slot: dict[str, Material] = {'a':None, 'b':None}
 
     def update_clock(self, clock_val):
         if clock_val % self.clock_max == 0:
@@ -333,10 +349,10 @@ class Worker:
     
     def blt(self):
         ## 今持っている材料
-        if self.slot['j'] is not None:
-            pyxel.blt(21*BLK-4, 11*BLK+4, IMG_BANK_0, self.slot['j'].addr_x, self.slot['j'].addr_y, 8, 8, 0)
-        if self.slot['k'] is not None:
-            pyxel.blt(12+21*BLK, 10*BLK+4, IMG_BANK_0, self.slot['k'].addr_x, self.slot['k'].addr_y, 8, 8, 0)
+        if self.slot['a'] is not None:
+            pyxel.blt(21*BLK-4, 11*BLK+4, IMG_BANK_0, self.slot['a'].addr_x, self.slot['a'].addr_y, 8, 8, 0)
+        if self.slot['b'] is not None:
+            pyxel.blt(12+21*BLK, 10*BLK+4, IMG_BANK_0, self.slot['b'].addr_x, self.slot['b'].addr_y, 8, 8, 0)
 
         if self.direction == 'right':
             pyxel.blt(self.x, self.y, IMG_BANK_0, 16, 0, 16, 16, 8)
