@@ -6,9 +6,11 @@ dependencies = [
     "pyxel~=1.9.16",
     "opencv-python~=4.7.0.72",
     "Pillow~=9.5.0",
+    "open-gopro~=0.13.0",
+    "setuptools~=67.8.0",
 ]
 readme = "README.md"
-requires-python = ">= 3.11"
+requires-python = ">= 3.10"
 
 [build-system]
 requires = ["hatchling"]

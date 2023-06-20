@@ -7,7 +7,33 @@
 #   all-features: false
 
 -e file:.
+async-timeout==4.0.2
+bleak==0.19.5
+certifi==2023.5.7
+charset-normalizer==3.1.0
+commonmark==0.9.1
+construct==2.10.68
+idna==3.4
+ifaddr==0.2.0
 numpy==1.24.3
+open-gopro==0.13.0
 opencv-python==4.7.0.72
+packaging==21.3
+pexpect==4.8.0
 pillow==9.5.0
+protobuf==3.20.3
+ptyprocess==0.7.0
+pygments==2.15.1
+pyobjc-core==8.5.1
+pyobjc-framework-cocoa==8.5.1
+pyobjc-framework-corebluetooth==8.5.1
+pyobjc-framework-libdispatch==8.5.1
+pyparsing==3.0.9
 pyxel==1.9.16
+requests==2.31.0
+rich==12.6.0
+urllib3==2.0.3
+wrapt==1.15.0
+zeroconf==0.39.4
+# The following packages are considered to be unsafe in a requirements file:
+setuptools==67.8.0
