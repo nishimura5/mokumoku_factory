@@ -12,7 +12,7 @@ IMG_BANK_1 = 1
 class Game:
     STORAGE_NUM = 5
     PRODUCT_NUM = 5
-    CLOCK_PERIOD = 240
+    CLOCK_PERIOD = 239
 
     def __init__(self):
         self.btn_dict = {'a':pyxel.KEY_J, 'b':pyxel.KEY_K}
@@ -23,6 +23,8 @@ class Game:
         self.storages: list[Storage] = [Storage(i, 1*BLK, 2*BLK + i*2*BLK) for i in range(self.STORAGE_NUM)]
         self.products: list[Product] = [Product(i, 22*BLK, 2*BLK + i*2*BLK, self.materials) for i in range(self.PRODUCT_NUM)]
         self.trash = Trash(3*BLK, 12*BLK)
+        self.dash = Dash()
+        self.speed = 4
         self.fps_disp = ''
 
         ## ボタンを押し間違えた回数のカウンタ
@@ -39,6 +41,7 @@ class Game:
 
         pyxel.init(30*BLK, 19*BLK, title="mokumoku_factory", display_scale=6, capture_scale=6)
         pyxel.load('./mokumoku.pyxres')
+        pyxel.fullscreen(True)
 
     def run(self, que_in=None, que_out=None):
         self.que_in = que_in
@@ -103,7 +106,7 @@ class Game:
 
     def _scene_1(self):
         ## 時計の針を進める
-        if self.clock > self.CLOCK_PERIOD:
+        if self.clock >= self.CLOCK_PERIOD:
             self.clock = 0
         else:
             self.clock += 1
@@ -119,8 +122,12 @@ class Game:
         if pyxel.btn(pyxel.KEY_S) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_DOWN):
             directions.append('down')
 
+        self._dash_worker(self.worker)
+        if self.clock % 60 == 0:
+            self.dash.move()
+
         self.worker.update_clock(self.clock)
-        self.worker.move(4, directions)
+        self.worker.move(self.speed, directions)
 
         ## ボタン押し間違いカウンター用配列
         stat = {k:{'storage':[], 'product':[], 'trash':0, 'push':pyxel.btnp(v), 'err':False} for k,v in self.btn_dict.items()}
@@ -162,12 +169,20 @@ class Game:
             if stat[k]['err']==True:
                 self.err_cnt[k] += 1
 
+    def _dash_worker(self, worker):
+        '''
+        ダッシュ床の処理
+        '''
+        if self.dash.is_near(worker) == True:
+            self.speed = 12
+        else:
+            self.speed -= 0.5
+        if self.speed <= 4:
+            self.speed = 4
 
-    ## 倉庫の処理
-    ## material: 倉庫に入れる材料
-    ## ret: ワーカーが何か手に入れたら1,空振りなら-1,ボタンを押してなければ0
     def _storage_worker(self, storage, worker, material):
         """
+        倉庫の処理
         ワーカーは倉庫から材料を受け取る。
         プレイヤーがボタンを押したとき、近くに当該倉庫がなければretval=-1、倉庫があっても材料を受け取れなければretval=-1、
         倉庫があり、かつ材料を受け取れればretval=1を返す。
@@ -258,6 +273,7 @@ class Game:
 
             ## ワーカーを描画
             self.worker.blt()
+            self.dash.blt()
 
             ## ボタン表記を描画
             if self.use_pad == True and self.layout == 1:
@@ -348,6 +364,14 @@ class Worker:
             if self._is_floor_tile(now_x1, next_bottom, now_x2, next_bottom):
                 self.y = next_y
             self.direction = 'down'
+
+        # ダッシュ時に位置ずれが起きるので対策
+        gap = int(self.x) % 4
+        if gap != 0:
+            self.x -= gap
+        gap = int(self.y) % 4
+        if gap != 0:
+            self.y -= gap
 
     ## 対象タイルが床タイルかを判定
     def _is_floor_tile(self, x1, y1, x2, y2):
@@ -513,6 +537,31 @@ class Trash:
         
     def add_cnt(self):
         self.cnt += 1
+
+class Dash:
+    def __init__(self):
+        self.x = 12*BLK
+        self.y = 3*BLK
+
+    def move(self):
+        self.x = self.x+pyxel.rndi(-BLK, BLK)
+        if self.x > 15*BLK:
+            self.x = 14*BLK
+        elif self.x < 6*BLK:
+            self.x = 7*BLK
+        self.y = pyxel.rndi(BLK, 4*BLK)
+
+    def is_near(self, worker):
+        x_dist = abs(self.x - worker.x)
+        y_dist = abs(self.y - worker.y)
+        if x_dist < 8 and y_dist < 8:
+            return True
+        else:
+            return False
+
+    def blt(self):
+        pyxel.blt(self.x, self.y, IMG_BANK_0, 16, 32, 16, 16, 0)
+
 
 if __name__ == "__main__":
     game = Game()
