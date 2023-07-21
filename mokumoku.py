@@ -21,7 +21,7 @@ class Game:
         self.materials: list[Material] = [Material(code) for code in ['yellow_juel', 'red_juel', 'blue_juel', 'green_juel', 'yellow_rod', 'red_rod', 'blue_rod', 'green_rod']]
         self.worker = Worker(7*BLK, BLK)
         self.storages: list[Storage] = [Storage(i, 1*BLK, 2*BLK + i*2*BLK) for i in range(self.STORAGE_NUM)]
-        self.products: list[Product] = [Product(i, 15*BLK, 2*BLK + i*2*BLK, self.materials) for i in range(self.PRODUCT_NUM)]
+        self.products: list[Product] = [Product(i, 22*BLK, 2*BLK + i*2*BLK, self.materials) for i in range(self.PRODUCT_NUM)]
         self.trash = Trash(3*BLK, 12*BLK)
         self.fps_disp = ''
 
@@ -37,7 +37,7 @@ class Game:
         filename = self.start_time.strftime('%Y%m%d_%H%M%S')
         self.f = open(f'./{filename}.csv', 'w')
 
-        pyxel.init(23*BLK, 13*BLK, title="mokumoku_factory")
+        pyxel.init(30*BLK, 19*BLK, title="mokumoku_factory", display_scale=6, capture_scale=6)
         pyxel.load('./mokumoku.pyxres')
 
     def run(self, que_in=None, que_out=None):
@@ -83,6 +83,14 @@ class Game:
                 self.scene = 1
                 self.use_pad = True
                 self.btn_dict = {'a':pyxel.GAMEPAD1_BUTTON_A, 'b':pyxel.GAMEPAD1_BUTTON_B}
+                self.layout=1
+            elif pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B):
+                self.start_time = datetime.datetime.now()
+                self.scene = 1
+                self.use_pad = True
+                self.btn_dict = {'a':pyxel.GAMEPAD1_BUTTON_A, 'b':pyxel.GAMEPAD1_BUTTON_B}
+                self.layout=2
+
 
         ## シーン1
         if self.scene == 1:
@@ -238,7 +246,7 @@ class Game:
 
         elif self.scene == 1:
             ## タイルマップを描画
-            pyxel.bltm(0, 0, 0, 0, 0, 24*BLK, 13*BLK)
+            pyxel.bltm(0, 0, 0, 0, 0, 30*BLK, 19*BLK)
 
             ## 倉庫を描画
             for storage in self.storages:
@@ -252,12 +260,15 @@ class Game:
             self.worker.blt()
 
             ## ボタン表記を描画
-            if self.use_pad == True:
-                pyxel.text(20*BLK+4, 11*BLK, "A", 7)
-                pyxel.text(21*BLK+4, 10*BLK, "B", 7)
+            if self.use_pad == True and self.layout == 1:
+                pyxel.text(26*BLK+10, 11*BLK, "A", 7)
+                pyxel.text(27*BLK+10, 10*BLK, "B", 7)
+            elif self.use_pad == True and self.layout == 2:
+                pyxel.text(26*BLK+10, 11*BLK, "B", 7)
+                pyxel.text(27*BLK+10, 10*BLK, "A", 7)
             else:
-                pyxel.text(20*BLK+4, 11*BLK, "J", 7)
-                pyxel.text(21*BLK+4, 10*BLK, "K", 7)
+                pyxel.text(26*BLK+10, 11*BLK, "J", 7)
+                pyxel.text(27*BLK+10, 10*BLK, "K", 7)
 
             ## スコアを描画
             storage_score = sum([i.cnt for i in self.storages]) * 10
@@ -265,9 +276,9 @@ class Game:
             trash_score = self.trash.cnt * 10
             score = product_score + storage_score - trash_score
 
-            pyxel.text(8, 2*BLK, self.fps_disp, 7)
-            pyxel.text(19*BLK+8, BLK, f"SCORE: {score:>5}", 7)
-        pyxel.text(90, 95, "Set camera here!", 7)
+            pyxel.text(26*BLK, 2*BLK, self.fps_disp, 7)
+            pyxel.text(26*BLK+8, BLK, f"SCORE: {score:>5}", 7)
+        pyxel.text(120, 100, "Set camera here!", 7)
 
 class Worker:
     def __init__(self, init_x, init_y):
@@ -350,9 +361,9 @@ class Worker:
     def blt(self):
         ## 今持っている材料
         if self.slot['a'] is not None:
-            pyxel.blt(21*BLK-4, 11*BLK+4, IMG_BANK_0, self.slot['a'].addr_x, self.slot['a'].addr_y, 8, 8, 0)
+            pyxel.blt(27*BLK+4, 11*BLK+4, IMG_BANK_0, self.slot['a'].addr_x, self.slot['a'].addr_y, 8, 8, 0)
         if self.slot['b'] is not None:
-            pyxel.blt(12+21*BLK, 10*BLK+4, IMG_BANK_0, self.slot['b'].addr_x, self.slot['b'].addr_y, 8, 8, 0)
+            pyxel.blt(28*BLK+4, 10*BLK+4, IMG_BANK_0, self.slot['b'].addr_x, self.slot['b'].addr_y, 8, 8, 0)
 
         if self.direction == 'right':
             pyxel.blt(self.x, self.y, IMG_BANK_0, 16, 0, 16, 16, 8)

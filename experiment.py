@@ -17,5 +17,6 @@ if __name__ == "__main__":
         args=(que_game_to_cv2, que_cv2_to_game, duration_sec, horizon_mode))
     loop_thread.start()
 
+    print("START")
     game = Game()
     game.run(que_cv2_to_game, que_game_to_cv2)
