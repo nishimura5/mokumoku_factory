@@ -38,8 +38,9 @@ class Game:
         ## log
         filename = self.start_time.strftime('%Y%m%d_%H%M%S')
         self.f = open(f'./{filename}.csv', 'w')
+        self.f.write("time,errorA,errorB,complete,dash\n")
 
-        pyxel.init(30*BLK, 19*BLK, title="mokumoku_factory", display_scale=6, capture_scale=6)
+        pyxel.init(30*BLK, 19*BLK, title="mokumoku_factory")
         pyxel.load('./mokumoku.pyxres')
         pyxel.fullscreen(True)
 
@@ -94,9 +95,9 @@ class Game:
         ## シーン1
         if self.scene == 1:
             self._scene_1()
-            self.cnt_buf.append([self.err_cnt.copy(), self.complete_cnt])
+            self.cnt_buf.append([self.err_cnt.copy(), self.complete_cnt, self.dash.cnt])
             if self.cnt_buf[0] != self.cnt_buf[1]:
-                log_msg = f"{datetime.datetime.now()-self.start_time},{self.err_cnt['a']},{self.err_cnt['b']},{self.complete_cnt}\n"
+                log_msg = f"{datetime.datetime.now()-self.start_time},{self.err_cnt['a']},{self.err_cnt['b']},{self.complete_cnt},{self.dash.cnt}\n"
                 self.f.write(log_msg)
             self.cnt_buf.popleft()
 
