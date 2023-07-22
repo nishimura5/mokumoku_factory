@@ -76,24 +76,20 @@ class Game:
 
         ## シーン0
         if self.scene==0:
-            if pyxel.btnp(pyxel.KEY_SPACE):
+            if pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B):
                 self.start_time = datetime.datetime.now()
                 self.scene = 1
-                self.btn_dict = {'a':pyxel.KEY_J, 'b':pyxel.KEY_K}
-                self.use_pad = False
-            elif pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A):
-                self.start_time = datetime.datetime.now()
-                self.scene = 1
-                self.use_pad = True
-                self.btn_dict = {'a':pyxel.GAMEPAD1_BUTTON_A, 'b':pyxel.GAMEPAD1_BUTTON_B}
-                self.layout=1
-            elif pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B):
-                self.start_time = datetime.datetime.now()
-                self.scene = 1
-                self.use_pad = True
-                self.btn_dict = {'a':pyxel.GAMEPAD1_BUTTON_A, 'b':pyxel.GAMEPAD1_BUTTON_B}
-                self.layout=2
-
+                pyxel.playm(0, loop=False)
+                if pyxel.btnp(pyxel.KEY_SPACE):
+                    self.use_pad = False
+                    self.btn_dict = {'a':pyxel.KEY_J, 'b':pyxel.KEY_K}
+                elif pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A):
+                    self.use_pad = True
+                    self.btn_dict = {'a':pyxel.GAMEPAD1_BUTTON_A, 'b':pyxel.GAMEPAD1_BUTTON_B}
+                elif pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B):
+                    self.use_pad = True
+                    self.btn_dict = {'a':pyxel.GAMEPAD1_BUTTON_A, 'b':pyxel.GAMEPAD1_BUTTON_B}
+                    self.layout=2
 
         ## シーン1
         if self.scene == 1:
@@ -122,7 +118,7 @@ class Game:
         if pyxel.btn(pyxel.KEY_S) or pyxel.btn(pyxel.GAMEPAD1_BUTTON_DPAD_DOWN):
             directions.append('down')
 
-        self._dash_worker(self.worker)
+        result = self._dash_worker(self.worker)
         if self.clock % 60 == 0:
             self.dash.move()
 
@@ -173,12 +169,15 @@ class Game:
         '''
         ダッシュ床の処理
         '''
+        is_dash = False
         if self.dash.is_near(worker) == True:
             self.speed = 12
+            is_dash = True
         else:
             self.speed -= 0.5
         if self.speed <= 4:
             self.speed = 4
+        return is_dash
 
     def _storage_worker(self, storage, worker, material):
         """
@@ -231,6 +230,7 @@ class Game:
             product.reset()
             product.add_cnt()
             complete = 1
+            pyxel.play(2, 4, loop=False)
         return complete, retval
 
     ## ゴミ箱の処理
@@ -251,7 +251,6 @@ class Game:
             else:
                 retval[k] = -1
         return retval
-
 
     def draw(self):
         pyxel.cls(0)
@@ -287,10 +286,11 @@ class Game:
                 pyxel.text(27*BLK+10, 10*BLK, "K", 7)
 
             ## スコアを描画
-            storage_score = sum([i.cnt for i in self.storages]) * 10
+            storage_score = sum([i.cnt for i in self.storages]) * 15
             product_score = sum([i.cnt for i in self.products]) * 100
-            trash_score = self.trash.cnt * 10
-            score = product_score + storage_score - trash_score
+            trash_score = self.trash.cnt * 15
+            dash_score = self.dash.cnt * 2
+            score = product_score + storage_score - trash_score + dash_score
 
             pyxel.text(26*BLK, 2*BLK, self.fps_disp, 7)
             pyxel.text(26*BLK+8, BLK, f"SCORE: {score:>5}", 7)
@@ -478,7 +478,13 @@ class Storage:
             pyxel.blt(self.x+4, self.y+4, IMG_BANK_0, self.materials[0].addr_x, self.materials[0].addr_y, 8, 8, 0)
 
     def add_cnt(self):
-        self.cnt += 1
+        '''
+        材料を入手したら+1
+        ABを同時に押すと2回以上カウントされてしまうため、self.charge_cntが溜まっていないときだけ加算する分岐が入っている
+        '''
+        if self.charge_cnt == 0:
+            self.cnt += 1
+            pyxel.play(1, 2, loop=False)
 
 ## 成果物
 class Product:
@@ -494,6 +500,7 @@ class Product:
     def add_material(self, material):
         if material in self.needs:
             self.needs.remove(material)
+            pyxel.play(1, 3, loop=False)
 
     def is_near(self, worker):
         x_dist = abs(self.x - worker.x)
@@ -502,12 +509,6 @@ class Product:
             return True
         else:
             return False
-
-    def is_completed(self):
-        ret_bool = False
-        if len(self.needs) == 0:
-            ret_bool = True
-        return ret_bool
 
     def reset(self):
         self.needs = random.sample(self.materials, 5)
@@ -542,6 +543,8 @@ class Dash:
     def __init__(self):
         self.x = 12*BLK
         self.y = 3*BLK
+        self.cnt = 0
+        self.chattering = False
 
     def move(self):
         self.x = self.x+pyxel.rndi(-BLK, BLK)
@@ -554,9 +557,13 @@ class Dash:
     def is_near(self, worker):
         x_dist = abs(self.x - worker.x)
         y_dist = abs(self.y - worker.y)
-        if x_dist < 8 and y_dist < 8:
+        if x_dist < 10 and y_dist < 10:
+            if self.chattering == False:
+                self.cnt += 1
+            self.chattering = True
             return True
         else:
+            self.chattering = False
             return False
 
     def blt(self):
