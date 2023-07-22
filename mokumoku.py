@@ -18,7 +18,7 @@ class Game:
         self.btn_dict = {'a':pyxel.KEY_J, 'b':pyxel.KEY_K}
         self.clock = 0
         self.scene = 0
-        self.materials: list[Material] = [Material(code) for code in ['yellow_juel', 'red_juel', 'blue_juel', 'green_juel', 'yellow_rod', 'red_rod', 'blue_rod', 'green_rod']]
+        self.materials: list[Material] = [Material(code) for code in ['yellow_jewel', 'red_jewel', 'blue_jewel', 'green_jewel', 'yellow_rod', 'red_rod', 'blue_rod', 'green_rod']]
         self.worker = Worker(7*BLK, BLK)
         self.storages: list[Storage] = [Storage(i, 1*BLK, 2*BLK + i*2*BLK) for i in range(self.STORAGE_NUM)]
         self.products: list[Product] = [Product(i, 22*BLK, 2*BLK + i*2*BLK, self.materials) for i in range(self.PRODUCT_NUM)]
@@ -171,7 +171,7 @@ class Game:
         '''
         is_dash = False
         if self.dash.is_near(worker) == True:
-            self.speed = 12
+            self.speed = 16
             is_dash = True
         else:
             self.speed -= 0.5
@@ -271,8 +271,8 @@ class Game:
                 product.blt()
 
             ## ワーカーを描画
-            self.worker.blt()
             self.dash.blt()
+            self.worker.blt()
 
             ## ボタン表記を描画
             if self.use_pad == True and self.layout == 1:
@@ -402,16 +402,16 @@ class Worker:
 class Material:
     def __init__(self, code):
         self.code = code
-        if code == 'yellow_juel':
+        if code == 'yellow_jewel':
             self.addr_x = 16
             self.addr_y = 16
-        elif code == 'red_juel':
+        elif code == 'red_jewel':
             self.addr_x = 16
             self.addr_y = 24
-        elif code == 'blue_juel':
+        elif code == 'blue_jewel':
             self.addr_x = 24
             self.addr_y = 16
-        elif code == 'green_juel':
+        elif code == 'green_jewel':
             self.addr_x = 24
             self.addr_y = 24
         elif code == 'yellow_rod':
@@ -560,6 +560,7 @@ class Dash:
         if x_dist < 10 and y_dist < 10:
             if self.chattering == False:
                 self.cnt += 1
+                pyxel.play(1, 5, loop=False)
             self.chattering = True
             return True
         else:
