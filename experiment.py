@@ -10,7 +10,7 @@ if __name__ == "__main__":
 
     ## 撮影条件
     horizon_mode = True
-    duration_sec = 60
+    duration_sec = 300
 
     loop_thread = threading.Thread(
         target=gopro_ctrl.loop,

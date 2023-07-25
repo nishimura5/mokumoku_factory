@@ -40,7 +40,7 @@ class Game:
         self.f = open(f'./{filename}.csv', 'w')
         self.f.write("time,errorA,errorB,complete,dash\n")
 
-        pyxel.init(30*BLK, 19*BLK, title="mokumoku_factory")
+        pyxel.init(30*BLK, 19*BLK, title="mokumoku_factory", fps=40)
         pyxel.load('./mokumoku.pyxres')
         pyxel.fullscreen(True)
 
@@ -69,10 +69,11 @@ class Game:
             if self.que_in.qsize() > 0:
                 got_msg = self.que_in.get()
                 ## image_showからQUITが送り返されてきたらゲームを終了
-                if got_msg == 'QUIT':
+                if got_msg == 'GAME_QUIT':
                     self.f.close()
                     pyxel.quit()
                 else:
+                    print(got_msg)
                     self.fps_disp = got_msg
 
         ## シーン0
@@ -84,7 +85,7 @@ class Game:
                 if pyxel.btnp(pyxel.KEY_SPACE):
                     self.use_pad = False
                     self.btn_dict = {'a':pyxel.KEY_J, 'b':pyxel.KEY_K}
-                elif pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A):
+                elif pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A or pyxel.KEY_K):
                     self.use_pad = True
                     self.btn_dict = {'a':pyxel.GAMEPAD1_BUTTON_A, 'b':pyxel.GAMEPAD1_BUTTON_B}
                 elif pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B):

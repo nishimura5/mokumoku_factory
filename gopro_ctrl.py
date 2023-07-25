@@ -1,40 +1,59 @@
 # pip install open-gopro
+import logging
+logging.basicConfig(level=logging.INFO)
 
 import datetime
 import time
 from open_gopro import WirelessGoPro, Params
 
-def start(horizon_mode=False):
-    with WirelessGoPro(enable_wifi = False) as gopro:
-        print('START')
-        gopro.ble_setting.resolution.set(Params.Resolution.RES_4K_4_3)
+class AutoGoPro:
+    def __init__(self):
+        self.gopro = WirelessGoPro(enable_wifi = False)
+    
+    def connect(self, horizon_mode=False):
+        self.gopro.open()
+        self.gopro.ble_setting.resolution.set(Params.Resolution.RES_4K_4_3)
 #        gopro.ble_setting.resolution.set(Params.Resolution.RES_2_7K_4_3)
-        gopro.ble_setting.fps.set(Params.FPS.FPS_60)
-        ret = gopro.ble_command.set_date_time(date_time=datetime.datetime.now())
+        self.gopro.ble_setting.fps.set(Params.FPS.FPS_60)
+        ret = self.gopro.ble_command.set_date_time(date_time=datetime.datetime.now())
         print(ret)
         if horizon_mode == True:
-            gopro.ble_setting.hypersmooth.set(Params.HypersmoothMode.ON)
-            gopro.ble_setting.video_field_of_view.set(Params.VideoFOV.LINEAR_HORIZON_LEVELING)
-            gopro.ble_setting.video_horizon_leveling.set(Params.HorizonLeveling.ON)
+            self.gopro.ble_setting.hypersmooth.set(Params.HypersmoothMode.ON)
+            self.gopro.ble_setting.video_field_of_view.set(Params.VideoFOV.LINEAR_HORIZON_LEVELING)
+            self.gopro.ble_setting.video_horizon_leveling.set(Params.HorizonLeveling.ON)
         else:
-            gopro.ble_setting.hypersmooth.set(Params.HypersmoothMode.OFF)
-            gopro.ble_setting.video_field_of_view.set(Params.VideoFOV.LINEAR)
-            gopro.ble_setting.video_horizon_leveling.set(Params.HorizonLeveling.OFF)
+            self.gopro.ble_setting.hypersmooth.set(Params.HypersmoothMode.OFF)
+            self.gopro.ble_setting.video_field_of_view.set(Params.VideoFOV.LINEAR)
+            self.gopro.ble_setting.video_horizon_leveling.set(Params.HorizonLeveling.OFF)
 
-        response = gopro.ble_command.get_camera_settings()
+        response = self.gopro.ble_command.get_camera_settings()
+        return response
+    
+    def start(self):
+        self.gopro.ble_command.set_shutter(shutter=Params.Toggle.ENABLE)
 
-        gopro.ble_command.set_shutter(shutter=Params.Toggle.ENABLE)
-    return response
-
-def stop():
-    with WirelessGoPro(enable_wifi = False) as gopro:
-        gopro.ble_command.set_shutter(shutter=Params.Toggle.DISABLE)
-    print('STOP')
+    def stop(self):
+        self.gopro.ble_command.set_shutter(shutter=Params.Toggle.DISABLE)
+        self.gopro.close()
 
 def loop(que_in, que_out, duration_sec, horizon_mode):
-    response = start(horizon_mode=horizon_mode)
+    agp = AutoGoPro()
+    print('CAM_START')
+    response = agp.connect(horizon_mode=horizon_mode)
+    agp.start()
     print(response)
-    que_out.put('START')
+    que_out.put('GAME_START')
     time.sleep(duration_sec)
-    stop()
-    que_out.put('QUIT')
+    agp.stop()
+    que_out.put('GAME_QUIT')
+
+def test(duration_sec):
+    agp = AutoGoPro()
+    response = agp.connect()
+    agp.start()
+    time.sleep(duration_sec)
+    agp.stop()
+
+
+if __name__ == "__main__":
+    test(5)
