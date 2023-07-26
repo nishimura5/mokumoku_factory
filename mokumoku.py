@@ -1,3 +1,4 @@
+import time
 import datetime
 import random
 import itertools
@@ -10,6 +11,7 @@ IMG_BANK_0 = 0
 IMG_BANK_1 = 1
 
 class Game:
+    FPS = 40
     STORAGE_NUM = 5
     PRODUCT_NUM = 5
     CLOCK_PERIOD = 239
@@ -33,16 +35,15 @@ class Game:
         self.complete_cnt: int = 0
         ## log用の差分チェックのためのバッファ
         self.cnt_buf = deque([[self.err_cnt, self.complete_cnt]])
-        ## ゲーム開始時の時刻(scene0を抜ける時に記録)
+        ## ゲーム開始時の時刻(scene1を抜ける時に記録)
         self.start_time = datetime.datetime.now()
         ## log
         filename = self.start_time.strftime('%Y%m%d_%H%M%S')
-        self.f = open(f'./{filename}.csv', 'w')
+        self.f = open(f'./log/{filename}.csv', 'w')
         self.f.write("time,errorA,errorB,complete,dash\n")
 
-        pyxel.init(30*BLK, 19*BLK, title="mokumoku_factory", fps=40)
+        pyxel.init(30*BLK, 19*BLK, title="mokumoku_factory", fps=self.FPS)
         pyxel.load('./mokumoku.pyxres')
-        pyxel.fullscreen(True)
 
     def run(self, que_in=None, que_out=None):
         self.que_in = que_in
@@ -65,6 +66,7 @@ class Game:
                 self.f.close()
                 pyxel.quit()
 
+        # Queueの受け取り
         if self.que_in is not None:
             if self.que_in.qsize() > 0:
                 got_msg = self.que_in.get()
@@ -72,20 +74,29 @@ class Game:
                 if got_msg == 'GAME_QUIT':
                     self.f.close()
                     pyxel.quit()
+                elif got_msg == 'GAME_START':
+                    self.scene = 1
+                elif got_msg == 'GAME_END':
+                    pyxel.play(3, 6, loop=False)
+                    self.scene = 3
                 else:
                     print(got_msg)
                     self.fps_disp = got_msg
+        # シーン0
+        if self.scene == 0:
+            pass
 
-        ## シーン0
-        if self.scene==0:
+        # シーン1
+        elif self.scene == 1:
             if pyxel.btnp(pyxel.KEY_SPACE) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A) or pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B):
                 self.start_time = datetime.datetime.now()
-                self.scene = 1
+                self.scene = 2
+                pyxel.fullscreen(True)
                 pyxel.playm(0, loop=False)
                 if pyxel.btnp(pyxel.KEY_SPACE):
                     self.use_pad = False
                     self.btn_dict = {'a':pyxel.KEY_J, 'b':pyxel.KEY_K}
-                elif pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A or pyxel.KEY_K):
+                elif pyxel.btnp(pyxel.GAMEPAD1_BUTTON_A):
                     self.use_pad = True
                     self.btn_dict = {'a':pyxel.GAMEPAD1_BUTTON_A, 'b':pyxel.GAMEPAD1_BUTTON_B}
                 elif pyxel.btnp(pyxel.GAMEPAD1_BUTTON_B):
@@ -93,16 +104,16 @@ class Game:
                     self.btn_dict = {'a':pyxel.GAMEPAD1_BUTTON_A, 'b':pyxel.GAMEPAD1_BUTTON_B}
                     self.layout=2
 
-        ## シーン1
-        if self.scene == 1:
-            self._scene_1()
+        # シーン2
+        elif self.scene == 2:
+            self._scene_2()
             self.cnt_buf.append([self.err_cnt.copy(), self.complete_cnt, self.dash.cnt])
             if self.cnt_buf[0] != self.cnt_buf[1]:
                 log_msg = f"{datetime.datetime.now()-self.start_time},{self.err_cnt['a']},{self.err_cnt['b']},{self.complete_cnt},{self.dash.cnt}\n"
                 self.f.write(log_msg)
             self.cnt_buf.popleft()
 
-    def _scene_1(self):
+    def _scene_2(self):
         ## 時計の針を進める
         if self.clock >= self.CLOCK_PERIOD:
             self.clock = 0
@@ -258,9 +269,12 @@ class Game:
         pyxel.cls(0)
 
         if self.scene == 0:
-            pyxel.text(127, 160, "...And Press SPACE Key", 7)
+            pyxel.text(155, 150, f"Camera connecting...", 7)
 
         elif self.scene == 1:
+            pyxel.text(155, 150, "Press A button (or SPACE key)", 7)
+
+        elif self.scene == 2:
             ## タイルマップを描画
             pyxel.bltm(0, 0, 0, 0, 0, 30*BLK, 19*BLK)
 
@@ -296,7 +310,6 @@ class Game:
 
             pyxel.text(26*BLK, 2*BLK, self.fps_disp, 7)
             pyxel.text(26*BLK+8, BLK, f"SCORE: {score:>5}", 7)
-        pyxel.text(120, 100, "Set camera here!", 7)
 
 class Worker:
     def __init__(self, init_x, init_y):
